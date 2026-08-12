@@ -1,17 +1,18 @@
 import datetime
 import email
-from email.header import decode_header
+from email.header import decode_header, make_header
 import imaplib
 import os
 import google.genai as genai
 import requests
 
-# 1. 메일 가져오기 함수 (IMAP)
+# 1. IMAP 메일 수신 함수
 def fetch_recent_emails(imap_server, user, password, folder="INBOX"):
     if not user or not password:
         return []
     try:
-        mail = imaplib.IMAP4_SSL(imap_server)
+        # SSL 보안 연결 (포트 993)
+        mail = imaplib.IMAP4_SSL(imap_server, 993)
         mail.login(user, password)
         mail.select(folder)
 
@@ -26,14 +27,10 @@ def fetch_recent_emails(imap_server, user, password, folder="INBOX"):
                 raw_email = data[0][1]
                 msg = email.message_from_bytes(raw_email)
 
-                # 제목 디코딩
+                # 제목 디코딩 (한글 깨짐/잘림 방지)
                 subject_header = msg["Subject"]
                 if subject_header:
-                    decoded = decode_header(subject_header)[0]
-                    subject = decoded[0]
-                    encoding = decoded[1]
-                    if isinstance(subject, bytes):
-                        subject = subject.decode(encoding or "utf-8", errors="ignore")
+                    subject = str(make_header(decode_header(subject_header)))
                 else:
                     subject = "(제목 없음)"
 
@@ -94,25 +91,11 @@ prompt = f"""
 {all_emails_text}
 """
 
-# 유효한 최신 모델명으로 지정 (gemini-2.0-flash)
+# 정식 출시된 Gemini 모델명 사용
 response = client.models.generate_content(
     model="gemini-3.5-flash-lite", contents=prompt
 )
 summary_result = response.text
-
-# # 4. 텔레그램 메시지 전송
-# telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
-# telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
-
-# message = f"☀️ **[아침 이메일 일일 브리핑]**\n\n{summary_result}"
-# requests.post(
-#     f"https://api.telegram.org/bot{telegram_token}/sendMessage",
-#     data={
-#         "chat_id": telegram_chat_id,
-#         "text": message,
-#         "parse_mode": "Markdown",
-#     },
-# )
 
 # 4. 텔레그램 메시지 전송 (에러 확인 및 안정화 적용)
 telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
