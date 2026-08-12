@@ -100,16 +100,37 @@ response = client.models.generate_content(
 )
 summary_result = response.text
 
-# 4. 텔레그램 메시지 전송
+# # 4. 텔레그램 메시지 전송
+# telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+# telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+# message = f"☀️ **[아침 이메일 일일 브리핑]**\n\n{summary_result}"
+# requests.post(
+#     f"https://api.telegram.org/bot{telegram_token}/sendMessage",
+#     data={
+#         "chat_id": telegram_chat_id,
+#         "text": message,
+#         "parse_mode": "Markdown",
+#     },
+# )
+
+# 4. 텔레그램 메시지 전송 (에러 확인 및 안정화 적용)
 telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
 telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
-message = f"☀️ **[아침 이메일 일일 브리핑]**\n\n{summary_result}"
-requests.post(
-    f"https://api.telegram.org/bot{telegram_token}/sendMessage",
-    data={
+if not telegram_token or not telegram_chat_id:
+    print("❌ 오류: TELEGRAM_BOT_TOKEN 또는 TELEGRAM_CHAT_ID가 Secrets에 설정되지 않았습니다.")
+else:
+    message = f"☀️ [아침 이메일 일일 브리핑]\n\n{summary_result}"
+    
+    # 텔레그램 API 호출
+    url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+    payload = {
         "chat_id": telegram_chat_id,
-        "text": message,
-        "parse_mode": "Markdown",
-    },
-)
+        "text": message
+        # parse_mode를 제거하여 Gemini 특수문자(마크다운) 오류로 인한 전송 실패 방지
+    }
+    
+    res = requests.post(url, data=payload)
+    print(f"📡 텔레그램 응답 상태 코드: {res.status_code}")
+    print(f"📡 텔레그램 응답 내용: {res.text}")
