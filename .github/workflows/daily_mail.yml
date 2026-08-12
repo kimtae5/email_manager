@@ -1,0 +1,35 @@
+name: Daily Email Agent Summary
+
+on:
+  schedule:
+    # UTC 기준 22:00 = 한국 시간(KST) 매일 아침 07:00 실행
+    - cron: '0 22 * * *'
+  workflow_dispatch: # 필요할 때 버튼 눌러 즉시 실행 가능
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install google-genai requests
+
+      - name: Run Mail Agent Script
+        env:
+          NAVER_USER: ${{ secrets.NAVER_USER }}
+          NAVER_PW: ${{ secrets.NAVER_PW }}
+          NATE_USER: ${{ secrets.NATE_USER }}
+          NATE_PW: ${{ secrets.NATE_PW }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PW: ${{ secrets.GMAIL_PW }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
