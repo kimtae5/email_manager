@@ -8,35 +8,42 @@ import requests
 
 # 1. 메일 가져오기 함수 (IMAP)
 def fetch_recent_emails(imap_server, user, password, folder="INBOX"):
+    if not user or not password:
+        return []
     try:
         mail = imaplib.IMAP4_SSL(imap_server)
         mail.login(user, password)
         mail.select(folder)
 
         # 지난 24시간 동안 수신된 메일 조회
-        date_str = (
-            datetime.date.today() - datetime.timedelta(days=1)
-        ).strftime("%d-%b-%Y")
+        date_str = (datetime.date.today() - datetime.timedelta(days=1)).strftime("%d-%b-%Y")
         status, messages = mail.search(None, f'(SINCE "{date_str}")')
 
         email_list = []
-        for num in messages[0].split()[-10:]:  # 최근 최대 10개만 추출
-            _, data = mail.fetch(num, "(RFC822)")
-            raw_email = data[0][1]
-            msg = email.message_from_bytes(raw_email)
+        if messages[0]:
+            for num in messages[0].split()[-10:]:  # 최근 최대 10개
+                _, data = mail.fetch(num, "(RFC822)")
+                raw_email = data[0][1]
+                msg = email.message_from_bytes(raw_email)
 
-            # 제목 디코딩
-            subject, encoding = decode_header(msg["Subject"])[0]
-            if isinstance(subject, bytes):
-                subject = subject.decode(encoding or "utf-8", errors="ignore")
+                # 제목 디코딩
+                subject_header = msg["Subject"]
+                if subject_header:
+                    decoded = decode_header(subject_header)[0]
+                    subject = decoded[0]
+                    encoding = decoded[1]
+                    if isinstance(subject, bytes):
+                        subject = subject.decode(encoding or "utf-8", errors="ignore")
+                else:
+                    subject = "(제목 없음)"
 
-            sender = msg.get("From")
-            email_list.append(f"[-발신자]: {sender}\n[-제목]: {subject}")
+                sender = msg.get("From", "알 수 없음")
+                email_list.append(f"[-발신자]: {sender}\n[-제목]: {subject}")
 
         mail.logout()
         return email_list
     except Exception as e:
-        print(f"{user} 메일 수신 실패: {e}")
+        print(f"[{imap_server}] 메일 수신 실패: {e}")
         return []
 
 
@@ -68,7 +75,7 @@ for acc in accounts:
         emails = fetch_recent_emails(acc["server"], acc["id"], acc["pw"])
         all_emails_text += f"\n\n=== [{acc['provider']} 메일함] ===\n"
         all_emails_text += (
-            "\n".join(emails) if emails else "최근 24시간 내 수신된 메일이 없습니다."
+            "\n".join(emails) if emails else "최근 24시간 내 수신된 메일이 없거나 로그인에 실패했습니다."
         )
 
 # 3. Gemini API를 이용한 분류 및 요약
@@ -87,6 +94,7 @@ prompt = f"""
 {all_emails_text}
 """
 
+# 유효한 최신 모델명으로 지정 (gemini-2.0-flash)
 response = client.models.generate_content(
     model="gemini-3.5-flash-lite", contents=prompt
 )
