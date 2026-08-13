@@ -1,80 +1,41 @@
 import imaplib
 import os
-import socket
-import ssl
 
-USER = os.getenv("NATE_USER")
 PASSWORD = os.getenv("NATE_PW")
 
-print("=" * 70)
-print("NATE IMAP AUTH TEST")
-print("=" * 70)
+users = [
+    "kimtae5",
+    "kimtae5@nate.com",
+]
 
-print("USER:", repr(USER))
-print("USER length:", len(USER) if USER else 0)
-print("PW exists:", bool(PASSWORD))
-print("PW length:", len(PASSWORD) if PASSWORD else 0)
+for user in users:
 
-print()
-print("[NETWORK]")
-
-print(
-    "NATE IP:",
-    socket.gethostbyname("imap.nate.com")
-)
-
-print()
-print("[IMAP]")
-
-mail = imaplib.IMAP4_SSL(
-    "imap.nate.com",
-    993,
-    timeout=30
-)
-
-print("WELCOME:")
-print(mail.welcome)
-
-print()
-print("CAPABILITY:")
-print(mail.capability())
-
-print()
-print("STATE:")
-print(mail.state)
-
-print()
-print("[LOGIN]")
-
-try:
-
-    result = mail.login(
-        USER,
-        PASSWORD
-    )
-
-    print("LOGIN SUCCESS")
-    print(result)
-
-    print()
-    print("[SELECT]")
-
-    result = mail.select(
-        "INBOX",
-        readonly=True
-    )
-
-    print(result)
-
-    mail.logout()
-
-except Exception as e:
-
-    print("LOGIN FAILED")
-    print("TYPE:", type(e).__name__)
-    print("ERROR:", repr(e))
+    print("=" * 70)
+    print("USER TEST:", user)
+    print("=" * 70)
 
     try:
+        mail = imaplib.IMAP4_SSL(
+            "imap.nate.com",
+            993,
+            timeout=30
+        )
+
+        print("WELCOME:", mail.welcome)
+        print("CAPABILITY:", mail.capability())
+
+        result = mail.login(
+            user,
+            PASSWORD
+        )
+
+        print("✅ LOGIN SUCCESS")
+        print(result)
+
         mail.logout()
-    except:
-        pass
+
+    except Exception as e:
+
+        print("❌ LOGIN FAILED")
+        print("TYPE:", type(e).__name__)
+        print("ERROR:", repr(e))
