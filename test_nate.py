@@ -2,11 +2,29 @@ import os
 import imaplib
 import ssl
 
+
 USER = os.getenv("NATE_USER")
 PASSWORD = os.getenv("NATE_PW")
 
-print("USER:", USER)
-print("PASSWORD:", "SET" if PASSWORD else "NOT SET")
+
+print("=" * 60)
+print("NATE IMAP TEST")
+print("=" * 60)
+
+print("NATE_USER:", repr(USER))
+print("NATE_USER length:", len(USER) if USER else 0)
+print("NATE_PW:", "설정됨" if PASSWORD else "없음")
+
+
+if not USER:
+    raise RuntimeError("NATE_USER Secret이 없습니다.")
+
+if not PASSWORD:
+    raise RuntimeError("NATE_PW Secret이 없습니다.")
+
+
+print()
+print("[1] IMAP SSL 연결")
 
 context = ssl.create_default_context()
 
@@ -17,21 +35,69 @@ mail = imaplib.IMAP4_SSL(
     timeout=30
 )
 
-print("CONNECTED")
+print("✅ SSL 연결 성공")
 print("WELCOME:", mail.welcome)
 
-try:
-    result = mail.login(USER, PASSWORD)
-    print("LOGIN:", result)
 
-    result = mail.select("INBOX", readonly=True)
-    print("INBOX:", result)
+print()
+print("[2] Nate 로그인")
+
+try:
+
+    result = mail.login(
+        USER,
+        PASSWORD
+    )
+
+    print("LOGIN RESULT:", result)
+    print("✅ Nate 로그인 성공")
 
 except Exception as e:
-    print("ERROR:", type(e).__name__, repr(e))
 
-finally:
-    try:
-        mail.logout()
-    except:
-        pass
+    print("❌ Nate 로그인 실패")
+    print("Exception:", type(e).__name__)
+    print("Message:", repr(e))
+
+    raise
+
+
+print()
+print("[3] INBOX 선택")
+
+try:
+
+    result = mail.select(
+        "INBOX",
+        readonly=True
+    )
+
+    print("INBOX RESULT:", result)
+
+    if result[0] == "OK":
+        print("✅ INBOX 선택 성공")
+    else:
+        print("❌ INBOX 선택 실패")
+
+except Exception as e:
+
+    print("❌ INBOX 선택 오류")
+    print("Exception:", type(e).__name__)
+    print("Message:", repr(e))
+
+    raise
+
+
+print()
+print("[4] 종료")
+
+try:
+    mail.logout()
+    print("✅ Logout 성공")
+except Exception as e:
+    print("Logout 오류:", e)
+
+
+print()
+print("=" * 60)
+print("🎉 NATE IMAP TEST COMPLETE")
+print("=" * 60)
