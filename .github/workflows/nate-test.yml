@@ -1,0 +1,34 @@
+name: Test Nate IMAP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-nate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Show Environment
+        run: |
+          echo "======================================"
+          echo "Nate IMAP Test"
+          echo "======================================"
+          python --version
+          python -c "import ssl; print('OpenSSL:', ssl.OPENSSL_VERSION)"
+          python -c "import imaplib; print('imaplib: OK')"
+
+      - name: Test Nate IMAP
+        env:
+          NATE_USER: ${{ secrets.NATE_USER }}
+          NATE_PW: ${{ secrets.NATE_PW }}
+
+        run: |
+          python -u test_nate.py
