@@ -1,6 +1,8 @@
 import os
 import imaplib
 import ssl
+import socket
+import requests
 
 
 USER = os.getenv("NATE_USER")
@@ -16,12 +18,37 @@ print("NATE_USER length:", len(USER) if USER else 0)
 print("NATE_PW:", "설정됨" if PASSWORD else "없음")
 
 
-if not USER:
-    raise RuntimeError("NATE_USER Secret이 없습니다.")
+# ============================================================
+# 네트워크 정보
+# ============================================================
 
-if not PASSWORD:
-    raise RuntimeError("NATE_PW Secret이 없습니다.")
+print()
+print("[NETWORK INFORMATION]")
 
+try:
+    print(
+        "imap.nate.com IP:",
+        socket.gethostbyname("imap.nate.com")
+    )
+except Exception as e:
+    print("DNS ERROR:", e)
+
+
+try:
+    public_ip = requests.get(
+        "https://api.ipify.org",
+        timeout=10
+    ).text
+
+    print("GitHub Runner Public IP:", public_ip)
+
+except Exception as e:
+    print("Public IP 확인 실패:", e)
+
+
+# ============================================================
+# IMAP 연결
+# ============================================================
 
 print()
 print("[1] IMAP SSL 연결")
@@ -38,6 +65,10 @@ mail = imaplib.IMAP4_SSL(
 print("✅ SSL 연결 성공")
 print("WELCOME:", mail.welcome)
 
+
+# ============================================================
+# LOGIN
+# ============================================================
 
 print()
 print("[2] Nate 로그인")
@@ -60,6 +91,10 @@ except Exception as e:
 
     raise
 
+
+# ============================================================
+# INBOX
+# ============================================================
 
 print()
 print("[3] INBOX 선택")
@@ -87,6 +122,10 @@ except Exception as e:
     raise
 
 
+# ============================================================
+# 종료
+# ============================================================
+
 print()
 print("[4] 종료")
 
@@ -99,5 +138,5 @@ except Exception as e:
 
 print()
 print("=" * 60)
-print("🎉 NATE IMAP TEST COMPLETE")
+print("NATE IMAP TEST COMPLETE")
 print("=" * 60)
